@@ -1,4 +1,12 @@
-﻿using UnityEngine;
+﻿/**
+ * 
+ * name: EyeMaze Project
+ * author: Tanguy Coenen
+ * organizaton: imec.apt
+ * 
+ * */
+
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -16,6 +24,8 @@ public class Player : MonoBehaviour
 
     public float minimumY = -60F;
     public float maximumY = 60F;
+
+    public bool mouseNav;
 
     float rotationX = 0F;
     float rotationY = 0F;
@@ -36,101 +46,122 @@ public class Player : MonoBehaviour
 
     void Update()
     {
-        //if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
-        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
+        if (mouseNav)
         {
-            Move();
+            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
+            {
+                Move();
+            }
+            if (Input.GetKey("escape"))
+            {
+                Application.Quit();
+            }
+
+            if (axes == RotationAxes.MouseXAndY)
+            {
+                rotAverageY = 0f;
+                rotAverageX = 0f;
+
+                rotationY += Input.GetAxis("Mouse Y") * sensitivityY;
+                rotationX += Input.GetAxis("Mouse X") * sensitivityX;
+
+                rotArrayY.Add(rotationY);
+                rotArrayX.Add(rotationX);
+
+                if (rotArrayY.Count >= frameCounter)
+                {
+                    rotArrayY.RemoveAt(0);
+                }
+                if (rotArrayX.Count >= frameCounter)
+                {
+                    rotArrayX.RemoveAt(0);
+                }
+
+                for (int j = 0; j < rotArrayY.Count; j++)
+                {
+                    rotAverageY += rotArrayY[j];
+                }
+                for (int i = 0; i < rotArrayX.Count; i++)
+                {
+                    rotAverageX += rotArrayX[i];
+                }
+
+                rotAverageY /= rotArrayY.Count;
+                rotAverageX /= rotArrayX.Count;
+
+                rotAverageY = ClampAngle(rotAverageY, minimumY, maximumY);
+                rotAverageX = ClampAngle(rotAverageX, minimumX, maximumX);
+
+                Quaternion yQuaternion = Quaternion.AngleAxis(rotAverageY, Vector3.left);
+                Quaternion xQuaternion = Quaternion.AngleAxis(rotAverageX, Vector3.up);
+
+                transform.localRotation = originalRotation * xQuaternion * yQuaternion;
+            }
+            else if (axes == RotationAxes.MouseX)
+            {
+                rotAverageX = 0f;
+
+                rotationX += Input.GetAxis("Mouse X") * sensitivityX;
+
+                rotArrayX.Add(rotationX);
+
+                if (rotArrayX.Count >= frameCounter)
+                {
+                    rotArrayX.RemoveAt(0);
+                }
+                for (int i = 0; i < rotArrayX.Count; i++)
+                {
+                    rotAverageX += rotArrayX[i];
+                }
+                rotAverageX /= rotArrayX.Count;
+
+                rotAverageX = ClampAngle(rotAverageX, minimumX, maximumX);
+
+                Quaternion xQuaternion = Quaternion.AngleAxis(rotAverageX, Vector3.up);
+                transform.localRotation = originalRotation * xQuaternion;
+            }
+            else
+            {
+                rotAverageY = 0f;
+
+                rotationY += Input.GetAxis("Mouse Y") * sensitivityY;
+
+                rotArrayY.Add(rotationY);
+
+                if (rotArrayY.Count >= frameCounter)
+                {
+                    rotArrayY.RemoveAt(0);
+                }
+                for (int j = 0; j < rotArrayY.Count; j++)
+                {
+                    rotAverageY += rotArrayY[j];
+                }
+                rotAverageY /= rotArrayY.Count;
+
+                rotAverageY = ClampAngle(rotAverageY, minimumY, maximumY);
+
+                Quaternion yQuaternion = Quaternion.AngleAxis(rotAverageY, Vector3.left);
+                transform.localRotation = originalRotation * yQuaternion;
+            }
         }
-        if (Input.GetKey("escape"))
+        if (!mouseNav)
         {
-            Application.Quit();
-        }
-
-        if (axes == RotationAxes.MouseXAndY)
-        {
-            rotAverageY = 0f;
-            rotAverageX = 0f;
-
-            rotationY += Input.GetAxis("Mouse Y") * sensitivityY;
-            rotationX += Input.GetAxis("Mouse X") * sensitivityX;
-
-            rotArrayY.Add(rotationY);
-            rotArrayX.Add(rotationX);
-
-            if (rotArrayY.Count >= frameCounter)
+            if (Input.GetKeyDown(KeyCode.UpArrow))
             {
-                rotArrayY.RemoveAt(0);
+                Move(MazeDirection.North);
             }
-            if (rotArrayX.Count >= frameCounter)
+            else if (Input.GetKeyDown(KeyCode.RightArrow))
             {
-                rotArrayX.RemoveAt(0);
+                Move(MazeDirection.East);
             }
-
-            for (int j = 0; j < rotArrayY.Count; j++)
+            else if (Input.GetKeyDown(KeyCode.DownArrow))
             {
-                rotAverageY += rotArrayY[j];
+                Move(MazeDirection.South);
             }
-            for (int i = 0; i < rotArrayX.Count; i++)
+            else if (Input.GetKeyDown(KeyCode.LeftArrow))
             {
-                rotAverageX += rotArrayX[i];
+                Move(MazeDirection.West);
             }
-
-            rotAverageY /= rotArrayY.Count;
-            rotAverageX /= rotArrayX.Count;
-
-            rotAverageY = ClampAngle(rotAverageY, minimumY, maximumY);
-            rotAverageX = ClampAngle(rotAverageX, minimumX, maximumX);
-
-            Quaternion yQuaternion = Quaternion.AngleAxis(rotAverageY, Vector3.left);
-            Quaternion xQuaternion = Quaternion.AngleAxis(rotAverageX, Vector3.up);
-
-            transform.localRotation = originalRotation * xQuaternion * yQuaternion;
-        }
-        else if (axes == RotationAxes.MouseX)
-        {
-            rotAverageX = 0f;
-
-            rotationX += Input.GetAxis("Mouse X") * sensitivityX;
-
-            rotArrayX.Add(rotationX);
-
-            if (rotArrayX.Count >= frameCounter)
-            {
-                rotArrayX.RemoveAt(0);
-            }
-            for (int i = 0; i < rotArrayX.Count; i++)
-            {
-                rotAverageX += rotArrayX[i];
-            }
-            rotAverageX /= rotArrayX.Count;
-
-            rotAverageX = ClampAngle(rotAverageX, minimumX, maximumX);
-
-            Quaternion xQuaternion = Quaternion.AngleAxis(rotAverageX, Vector3.up);
-            transform.localRotation = originalRotation * xQuaternion;
-        }
-        else
-        {
-            rotAverageY = 0f;
-
-            rotationY += Input.GetAxis("Mouse Y") * sensitivityY;
-
-            rotArrayY.Add(rotationY);
-
-            if (rotArrayY.Count >= frameCounter)
-            {
-                rotArrayY.RemoveAt(0);
-            }
-            for (int j = 0; j < rotArrayY.Count; j++)
-            {
-                rotAverageY += rotArrayY[j];
-            }
-            rotAverageY /= rotArrayY.Count;
-
-            rotAverageY = ClampAngle(rotAverageY, minimumY, maximumY);
-
-            Quaternion yQuaternion = Quaternion.AngleAxis(rotAverageY, Vector3.left);
-            transform.localRotation = originalRotation * yQuaternion;
         }
     }
 
@@ -184,6 +215,15 @@ public class Player : MonoBehaviour
         if (!colliding)
         {
             rigidbody.MovePosition(transform.localPosition + transform.localRotation * new Vector3(0, 0, movementSpeed));
+        }
+       
+    }
+    private void Move(MazeDirection direction)
+    {
+        MazeCellEdge edge = currentCell.GetEdge(direction);
+        if (edge is MazePassage)
+        {
+            SetLocation(edge.otherCell);
         }
     }
 }
